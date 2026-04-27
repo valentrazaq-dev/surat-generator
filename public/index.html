@@ -9,20 +9,19 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --navy: #1a2744; --navy-light: #243258; --accent: #2563eb; --accent-hover: #1d4ed8;
       --green: #16a34a; --green-hover: #15803d; --red: #dc2626;
-      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0; --gray-300: #cbd5e1;
+      --gray-50: #f8fafc; --gray-200: #e2e8f0; --gray-300: #cbd5e1;
       --gray-500: #64748b; --gray-700: #334155; --gray-900: #0f172a; --white: #ffffff;
       --shadow: 0 1px 3px rgba(0,0,0,0.12); --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
       --radius: 8px;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-900); min-height: 100vh; }
     header { background: var(--navy); padding: 16px 24px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-md); }
-    .header-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .header-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
     header h1 { color: var(--white); font-size: 20px; font-weight: 700; }
     header p { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 1px; }
     .container { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
@@ -36,8 +35,8 @@
     label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 6px; }
     label span { color: var(--gray-500); font-weight: 400; }
     textarea, input[type="text"] { width: 100%; border: 1px solid var(--gray-300); border-radius: 6px; padding: 10px 12px; font-size: 13px; font-family: inherit; color: var(--gray-900); background: var(--white); transition: border-color 0.15s; outline: none; resize: vertical; }
-    textarea:focus, input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    textarea.mono { font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.5; }
+    textarea:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    textarea.mono { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5; }
     .hint { font-size: 11px; color: var(--gray-500); margin-top: 5px; }
     .field-group { margin-bottom: 14px; }
     .field-group:last-child { margin-bottom: 0; }
@@ -46,6 +45,7 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--accent); color: white; width: 100%; padding: 12px; font-size: 15px; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-danger { background: var(--red); color: white; width: 100%; padding: 12px; font-size: 15px; }
     .btn-success { background: var(--green); color: white; font-size: 12px; padding: 7px 12px; }
     .btn-success:hover { background: var(--green-hover); }
     .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 12px; padding: 7px 12px; }
@@ -53,23 +53,21 @@
     .btn-zip { background: var(--navy); color: white; width: 100%; padding: 11px; font-size: 14px; margin-bottom: 16px; }
     .btn-zip:hover { background: var(--navy-light); }
     .generate-section { margin-top: 20px; }
-    .progress-wrap { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px 18px; box-shadow: var(--shadow); }
+    .progress-wrap { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px 18px; margin-top: 16px; box-shadow: var(--shadow); }
     .progress-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
     .progress-sub { font-size: 12px; color: var(--gray-500); margin-bottom: 14px; }
     .progress-bar-track { background: var(--gray-200); border-radius: 100px; height: 8px; overflow: hidden; }
     .progress-bar-fill { background: var(--accent); height: 100%; border-radius: 100px; transition: width 0.4s ease; }
     .results-section { margin-top: 20px; }
-    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .results-title { font-size: 16px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: 8px; }
+    .results-title { font-size: 16px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
     .badge-success { background: #dcfce7; color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
     .surat-item { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
     .surat-item-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
-    .surat-nama { font-size: 14px; font-weight: 600; color: var(--gray-900); display: flex; align-items: center; gap: 8px; }
+    .surat-nama { font-size: 14px; font-weight: 600; color: var(--gray-900); }
     .surat-actions { display: flex; gap: 8px; }
     .surat-preview { padding: 14px 16px; max-height: 200px; overflow-y: auto; }
-    .surat-preview pre { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.6; color: var(--gray-700); white-space: pre-wrap; word-break: break-word; }
-    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 16px; margin-top: 14px; display: flex; gap: 10px; }
-    .error-icon { font-size: 16px; flex-shrink: 0; }
+    .surat-preview pre { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.6; color: var(--gray-700); white-space: pre-wrap; word-break: break-word; }
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; display: flex; gap: 10px; }
     .error-text { font-size: 13px; color: var(--red); line-height: 1.5; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-500); }
     .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
@@ -78,7 +76,6 @@
     .tip-box p { font-size: 12px; color: #1e40af; line-height: 1.5; }
     .divider { height: 1px; background: var(--gray-200); margin: 20px 0; }
     footer { text-align: center; padding: 20px; font-size: 12px; color: var(--gray-500); margin-top: 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -86,31 +83,22 @@
   <script type="text/babel">
     const { useState, useRef } = React;
 
-    async function buildDocx(nama, content) {
-      const { Document, Paragraph, TextRun, Packer, AlignmentType } = window.docx;
+    function buildWordHtml(content) {
       const lines = content.split('\n');
-      const paragraphs = lines.map(line => {
-        const trimmed = line.trimEnd();
-        return new Paragraph({
-          children: [new TextRun({ text: trimmed, font: 'Times New Roman', size: 24 })],
-          spacing: { after: 0, before: 0, line: 276 },
-        });
-      });
-      const doc = new Document({
-        sections: [{
-          properties: { page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1701 } } },
-          children: paragraphs,
-        }]
-      });
-      return await Packer.toBlob(doc);
+      const paras = lines.map(function(line) {
+        var escaped = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return '<p>' + (escaped || '&nbsp;') + '</p>';
+      }).join('');
+      return '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:"Times New Roman",serif;font-size:12pt;}p{margin:0;line-height:1.5;}</style></head><body>' + paras + '</body></html>';
     }
 
-    async function downloadDocx(nama, content) {
-      const blob = await buildDocx(nama, content);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+    function downloadDoc(nama, content) {
+      var html = buildWordHtml(content);
+      var blob = new Blob([html], { type: 'application/msword' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
       a.href = url;
-      a.download = `Surat_${nama.replace(/\s+/g, '_')}.docx`;
+      a.download = 'Surat_' + nama.replace(/\s+/g, '_') + '.doc';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -118,13 +106,12 @@
     }
 
     async function downloadAllZip(results) {
-      const zip = new JSZip();
-      for (const { nama, content } of results) {
-        const blob = await buildDocx(nama, content);
-        const arrayBuffer = await blob.arrayBuffer();
-        zip.file(`Surat_${nama.replace(/\s+/g, '_')}.docx`, arrayBuffer);
-      }
-      const blob = await zip.generateAsync({ type: 'blob' });
+      var zip = new JSZip();
+      results.forEach(function(item) {
+        var html = buildWordHtml(item.content);
+        zip.file('Surat_' + item.nama.replace(/\s+/g, '_') + '.doc', html);
+      });
+      var blob = await zip.generateAsync({ type: 'blob' });
       saveAs(blob, 'Surat_Generator_Output.zip');
     }
 
@@ -140,7 +127,7 @@
       const [globalError, setGlobalError] = useState('');
       const abortRef = useRef(false);
 
-      const nameList = names.split('\n').map(n => n.trim()).filter(Boolean);
+      const nameList = names.split('\n').map(function(n){ return n.trim(); }).filter(Boolean);
       const nameCount = nameList.length;
 
       async function handleGenerate() {
@@ -151,33 +138,37 @@
         if (!purpose.trim()) return setGlobalError('Tujuan/Hal harus diisi');
         if (!date.trim()) return setGlobalError('Tanggal harus diisi');
 
-        setLoading(true); setResults([]); setProgress({ current: 0, total: nameCount });
+        setLoading(true);
+        setResults([]);
+        setProgress({ current: 0, total: nameCount });
         abortRef.current = false;
-        const newResults = [], newErrors = [];
 
-        for (let i = 0; i < nameList.length; i++) {
+        var newResults = [];
+        var newErrors = [];
+
+        for (var i = 0; i < nameList.length; i++) {
           if (abortRef.current) break;
-          const nama = nameList[i];
+          var nama = nameList[i];
           setProgress({ current: i + 1, total: nameList.length });
           try {
-            const res = await fetch('/api/generate', {
+            var res = await fetch('/api/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ template, nama, purpose, date }),
+              body: JSON.stringify({ template: template, nama: nama, purpose: purpose, date: date }),
             });
-            const data = await res.json();
+            var data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Gagal generate');
             newResults.push({ nama: data.nama, content: data.content });
-            setResults([...newResults]);
+            setResults(newResults.slice());
           } catch (err) {
-            newErrors.push({ nama, error: err.message });
-            setErrors([...newErrors]);
+            newErrors.push({ nama: nama, error: err.message });
+            setErrors(newErrors.slice());
           }
         }
         setLoading(false);
       }
 
-      const progressPct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+      var progressPct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
       return (
         <div>
@@ -188,6 +179,7 @@
               <p>Generate surat dinas otomatis — format persis template lo</p>
             </div>
           </header>
+
           <div className="container">
             <div className="layout">
               <div className="card">
@@ -197,14 +189,14 @@
                 </div>
                 <div className="card-body">
                   <div className="field-group">
-                    <label>Paste template surat referensi lo di sini</label>
+                    <label>Paste template surat referensi di sini</label>
                     <textarea className="mono" rows={18}
-                      placeholder={"PEMERINTAH KOTA BATAM\nDINAS TENAGA KERJA\n...\n\nKepada : Yth. [NAMA]\nDari   : Kepala Dinas\n..."}
-                      value={template} onChange={e => setTemplate(e.target.value)} />
-                    <p className="hint">Format, kop surat, paraf hirarkhi, dan tanda tangan akan dipertahankan persis</p>
+                      placeholder="PEMERINTAH KOTA BATAM&#10;DINAS TENAGA KERJA&#10;...&#10;&#10;Kepada : Yth. [NAMA]&#10;Dari   : Kepala Dinas&#10;..."
+                      value={template} onChange={function(e){ setTemplate(e.target.value); }} />
+                    <p className="hint">Format, kop surat, paraf hirarkhi, dan tanda tangan dipertahankan persis</p>
                   </div>
                   <div className="tip-box">
-                    <p><strong>💡 Tips:</strong> Paste full surat termasuk kop, nomor, isi, paraf hirarkhi, dan blok tanda tangan. Semakin lengkap, semakin akurat.</p>
+                    <p><strong>Tips:</strong> Paste full surat termasuk kop, nomor, isi, paraf hirarkhi, dan blok tanda tangan. Semakin lengkap, semakin akurat.</p>
                   </div>
                 </div>
               </div>
@@ -217,22 +209,23 @@
                   </div>
                   <div className="card-body">
                     <div className="field-group">
-                      <label>Daftar Nama <span>— satu nama per baris</span>
+                      <label>
+                        Daftar Nama <span>— satu nama per baris</span>
                         <span className="name-counter">{nameCount} nama</span>
                       </label>
                       <textarea rows={7} placeholder={"Ahmad Fauzi\nSiti Rahayu\nBudi Santoso"}
-                        value={names} onChange={e => setNames(e.target.value)} />
+                        value={names} onChange={function(e){ setNames(e.target.value); }} />
                       <p className="hint">Maks. 20 nama sekaligus</p>
                     </div>
                     <div className="field-group">
                       <label>Perihal / Tujuan Surat</label>
                       <input type="text" placeholder="Cth: Undangan Sosialisasi Program Pelatihan Kerja"
-                        value={purpose} onChange={e => setPurpose(e.target.value)} />
+                        value={purpose} onChange={function(e){ setPurpose(e.target.value); }} />
                     </div>
                     <div className="field-group">
                       <label>Tanggal Surat</label>
                       <input type="text" placeholder="Cth: 27 April 2026"
-                        value={date} onChange={e => setDate(e.target.value)} />
+                        value={date} onChange={function(e){ setDate(e.target.value); }} />
                     </div>
                   </div>
                 </div>
@@ -240,27 +233,26 @@
                 <div className="generate-section">
                   {!loading ? (
                     <button className="btn btn-primary" onClick={handleGenerate}>
-                      ⚡ Generate {nameCount > 0 ? `${nameCount} Surat` : 'Surat'}
+                      ⚡ Generate {nameCount > 0 ? nameCount + ' Surat' : 'Surat'}
                     </button>
                   ) : (
-                    <button className="btn btn-primary" style={{background:'#dc2626'}} onClick={() => { abortRef.current = true; setLoading(false); }}>
+                    <button className="btn btn-danger" onClick={function(){ abortRef.current = true; setLoading(false); }}>
                       ⛔ Stop Generate
                     </button>
                   )}
                   {globalError && (
-                    <div className="error-box" style={{marginTop:12}}>
-                      <span className="error-icon">⚠️</span>
-                      <span className="error-text">{globalError}</span>
+                    <div className="error-box">
+                      <span className="error-text">⚠️ {globalError}</span>
                     </div>
                   )}
                 </div>
 
                 {loading && (
-                  <div className="progress-wrap" style={{marginTop:16}}>
+                  <div className="progress-wrap">
                     <p className="progress-title">Generating surat {progress.current} dari {progress.total}...</p>
-                    <p className="progress-sub">Sabar ya, AI lagi kerja 🤖</p>
+                    <p className="progress-sub">AI lagi kerja 🤖</p>
                     <div className="progress-bar-track">
-                      <div className="progress-bar-fill" style={{width:`${progressPct}%`}}></div>
+                      <div className="progress-bar-fill" style={{width: progressPct + '%'}}></div>
                     </div>
                   </div>
                 )}
@@ -270,55 +262,57 @@
             {(results.length > 0 || errors.length > 0) && (
               <div className="results-section">
                 <div className="divider"></div>
-                <div className="results-header">
-                  <h2 className="results-title">
-                    ✅ Hasil Generate
-                    <span className="badge-success">{results.length} surat</span>
-                  </h2>
-                </div>
+                <h2 className="results-title">
+                  ✅ Hasil Generate
+                  <span className="badge-success">{results.length} surat</span>
+                </h2>
 
                 {results.length > 1 && (
-                  <button className="btn btn-zip" onClick={() => downloadAllZip(results)}>
-                    📦 Download Semua ({results.length} file .docx) sebagai ZIP
+                  <button className="btn btn-zip" onClick={function(){ downloadAllZip(results); }}>
+                    📦 Download Semua ({results.length} file .doc) sebagai ZIP
                   </button>
                 )}
 
-                {errors.map(({ nama, error }) => (
-                  <div className="error-box" style={{marginBottom:10}} key={nama}>
-                    <span className="error-icon">❌</span>
-                    <span className="error-text"><strong>{nama}:</strong> {error}</span>
-                  </div>
-                ))}
+                {errors.map(function(item) {
+                  return (
+                    <div className="error-box" style={{marginBottom:10}} key={item.nama}>
+                      <span className="error-text"><strong>{item.nama}:</strong> {item.error}</span>
+                    </div>
+                  );
+                })}
 
-                {results.map(({ nama, content }) => (
-                  <div className="surat-item" key={nama}>
-                    <div className="surat-item-header">
-                      <span className="surat-nama">👤 {nama}</span>
-                      <div className="surat-actions">
-                        <button className="btn btn-outline" onClick={() => navigator.clipboard.writeText(content)}>
-                          📋 Copy
-                        </button>
-                        <button className="btn btn-success" onClick={() => downloadDocx(nama, content)}>
-                          ⬇ Download .docx
-                        </button>
+                {results.map(function(item) {
+                  return (
+                    <div className="surat-item" key={item.nama}>
+                      <div className="surat-item-header">
+                        <span className="surat-nama">👤 {item.nama}</span>
+                        <div className="surat-actions">
+                          <button className="btn btn-outline" onClick={function(){ navigator.clipboard.writeText(item.content); }}>
+                            📋 Copy
+                          </button>
+                          <button className="btn btn-success" onClick={function(){ downloadDoc(item.nama, item.content); }}>
+                            ⬇ Download .doc
+                          </button>
+                        </div>
+                      </div>
+                      <div className="surat-preview">
+                        <pre>{item.content}</pre>
                       </div>
                     </div>
-                    <div className="surat-preview">
-                      <pre>{content}</pre>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
             {results.length === 0 && !loading && (
               <div className="empty-state">
                 <div className="icon">📋</div>
-                <p>Paste template → isi nama & detail → klik Generate<br/>Output .docx siap dalam hitungan detik per surat</p>
+                <p>Paste template → isi nama dan detail → klik Generate<br/>Output .doc siap dalam hitungan detik per surat</p>
               </div>
             )}
           </div>
-          <footer>Surat Generator AI — Disnaker Kota Batam · Powered by Groq AI</footer>
+
+          <footer>Surat Generator AI — grahation-aesen-eai · Powered by Groq AI</footer>
         </div>
       );
     }
