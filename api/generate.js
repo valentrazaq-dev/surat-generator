@@ -12,12 +12,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Semua field harus diisi' });
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY belum diset di environment variables' });
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
+    return res.status(500).json({ error: 'GROQ_API_KEY belum diset di environment variables' });
   }
 
-  const systemInstruction = `Anda adalah ahli format surat dinas pemerintahan Indonesia yang sangat teliti dan presisi.
+  const systemPrompt = `Anda adalah ahli format surat dinas pemerintahan Indonesia yang sangat teliti dan presisi.
 
 TUGAS UTAMA: Generate satu surat baru yang format-nya IDENTIK dengan template referensi yang diberikan.
 
@@ -43,36 +43,30 @@ Tanggal: ${date}
 Return HANYA isi surat saja. Tidak ada penjelasan. Tidak ada komentar.`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: userPrompt }]
-            }
-          ],
-          generationConfig: {
-            maxOutputTokens: 4096,
-            temperature: 0.3,
-          }
-        }),
-      }
-    );
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 4096,
+        temperature: 0.3,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
+    });
 
     if (!response.ok) {
       const errData = await response.json();
-      throw new Error(errData.error?.message || `Gemini API error: ${response.status}`);
+      throw new Error(errData.error?.message || `Groq API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const content = data.choices?.[0]?.message?.content?.trim();
 
     if (!content) throw new Error('Response kosong dari AI');
 
