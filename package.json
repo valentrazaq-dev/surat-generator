@@ -2,7 +2,7 @@
   "name": "surat-generator",
   "version": "1.0.0",
   "private": true,
-  "description": "AI-powered surat dinas generator untuk PNS",
+  "type": "module",
   "engines": {
     "node": ">=18"
   }
