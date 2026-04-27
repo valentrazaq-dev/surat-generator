@@ -17,71 +17,152 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'GROQ_API_KEY belum diset' });
   }
 
-  const systemPrompt = `Anda adalah ahli format surat dinas pemerintahan Indonesia.
+  const systemPrompt = `Anda adalah ahli tata naskah dinas pemerintahan Indonesia sesuai Permenpan RB Nomor 80 Tahun 2012 dan format Sistem Informasi Kearsipan Dinamis Terintegrasi (SRIKANDI).
 
-TUGAS: Generate surat dinas baru sebagai HTML fragments (BUKAN plain text).
+TUGAS: Generate surat dinas baru sebagai HTML fragments berdasarkan template referensi.
+OUTPUT: HTML fragments SAJA — tanpa DOCTYPE, tanpa tag html/head/body, tanpa penjelasan, tanpa markdown.
 
-ATURAN OUTPUT HTML:
-- Output HANYA konten HTML — tidak ada DOCTYPE, tidak ada tag html/head/body
-- Gunakan font: Times New Roman, 12pt (24px), line-height 1.5
-- Semua teks menggunakan font-family: "Times New Roman", serif
+═══════════════════════════════════════
+STANDAR UMUM (berlaku untuk semua jenis)
+═══════════════════════════════════════
+- Font: Times New Roman 12pt di semua elemen
+- Line-height: 1.5 untuk body teks
+- Margin sudah diatur di level dokumen
 
-STRUKTUR HTML YANG WAJIB DIIKUTI:
-
-1. KOP SURAT (center semua baris):
-<div style="text-align:center;margin-bottom:8px">
-  <div style="font-size:13pt;font-weight:normal">NAMA INSTANSI BARIS 1</div>
-  <div style="font-size:14pt;font-weight:bold">NAMA DINAS</div>
-  <div>Alamat lengkap</div>
-  <div>Telepon/Email/Website</div>
-  <div style="font-weight:bold;letter-spacing:4px">B A T A M</div>
-  <div>Kode Pos : XXXXX</div>
+KOP SURAT (selalu sama, center semua):
+<div style="text-align:center;line-height:1.3;">
+  <div>PEMERINTAH KOTA BATAM</div>
+  <div style="font-weight:bold;font-size:14pt;">[NAMA DINAS/PERANGKAT DAERAH]</div>
+  <div style="font-size:11pt;">[ALAMAT LENGKAP]</div>
+  <div style="font-size:11pt;">[TELEPON/FAKSIMILE]</div>
+  <div style="font-size:11pt;">[LAMAN/POS-EL]</div>
 </div>
-<hr style="border:1.5px solid black;margin:4px 0">
-<hr style="border:0.5px solid black;margin:2px 0">
+<hr style="border:none;border-top:2px solid black;margin:6px 0 2px 0;">
+<hr style="border:none;border-top:1px solid black;margin:0 0 10px 0;">
 
-2. JUDUL (center, bold, underline):
-<div style="text-align:center;font-weight:bold;text-decoration:underline;margin:16px 0 12px">TELAAH STAF</div>
+═══════════════════════════════════════════════
+JENIS 1: SURAT DINAS (ada Nomor/Sifat/Lampiran/Hal + Yth.)
+═══════════════════════════════════════════════
+Struktur setelah kop:
 
-3. HEADER FIELDS (tabel dua kolom, rata kiri):
-<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-  <tr><td style="width:90px;vertical-align:top;padding:1px 0">Kepada</td><td style="width:12px;vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">Yth. [NAMA]</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Dari</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">Kepala Dinas Tenaga Kerja Kota Batam</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Tanggal</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">[TANGGAL]</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Nomor</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">[NOMOR]</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Sifat</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">Penting</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Lampiran</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">2 (lembar)</td></tr>
-  <tr><td style="vertical-align:top;padding:1px 0">Hal</td><td style="vertical-align:top;padding:1px 0">:</td><td style="vertical-align:top;padding:1px 0">[HAL/PERIHAL]</td></tr>
+<!-- Tanggal kanan -->
+<div style="text-align:right;margin-bottom:10px;">Batam, [TANGGAL]</div>
+
+<!-- Field table -->
+<table style="border-collapse:collapse;margin-bottom:12px;">
+  <tr><td style="width:75px;padding:0 0 1px;">Nomor</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[NOMOR SURAT - sesuaikan bulan romawi dan tahun]</td></tr>
+  <tr><td style="padding:0 0 1px;">Sifat</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[SIFAT]</td></tr>
+  <tr><td style="padding:0 0 1px;">Lampiran</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[LAMPIRAN]</td></tr>
+  <tr><td style="padding:0 0 1px;vertical-align:top;">Hal</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;"><strong>[HAL]</strong></td></tr>
 </table>
 
-4. PARAGRAF PEMBUKA (indent 2cm, justified):
-<p style="text-indent:2cm;text-align:justify;margin-bottom:12px">Merujuk pada ... bersama ini disampaikan ke hadapan Bapak, sebagai berikut:</p>
+<!-- Alamat tujuan -->
+<div style="margin-bottom:14px;">
+  <div>Yth. [NAMA/JABATAN PENERIMA]</div>
+  <div>di -</div>
+  <div>Tempat</div>
+</div>
 
-5. POIN-POIN ISI (numbered, justified, hanging indent):
-<ol style="margin:0 0 16px 0;padding-left:1.5cm">
-  <li style="text-align:justify;margin-bottom:8px">Isi poin pertama...</li>
-  <li style="text-align:justify;margin-bottom:8px">Isi poin kedua...</li>
-</ol>
+<!-- Isi surat -->
+<p style="text-indent:1cm;text-align:justify;margin-bottom:10px;">[Alinea pembuka yang merujuk konteks dan dasar surat]</p>
+<p style="text-indent:1cm;text-align:justify;margin-bottom:10px;">[Alinea isi yang memuat substansi/pokok surat secara lengkap dan relevan]</p>
+<p style="text-indent:1cm;text-align:justify;margin-bottom:16px;">[Alinea penutup]</p>
 
-6. PENUTUP (indent, justified):
-<p style="text-indent:2cm;text-align:justify;margin-top:16px">Demikian yang dapat disampaikan, mohon arahan dan petunjuk Bapak selanjutnya.</p>
-
-7. TANDA TANGAN (kiri untuk jabatan, right-align untuk nama):
-<div style="margin-top:24px">
-  <div>Kepala Dinas Tenaga Kerja Kota Batam,</div>
-  <div style="margin-top:60px">
-    <div style="font-weight:bold;text-decoration:underline">[NAMA PENANDATANGAN]</div>
-    <div>[PANGKAT]</div>
+<!-- TTD -->
+<div style="margin-top:12px;">
+  <div>[Jabatan Penandatangan],</div>
+  <div style="margin-top:56px;">
+    <div><strong><u>[NAMA]</u></strong></div>
+    <div>[PANGKAT/GOL]</div>
     <div>NIP. [NIP]</div>
   </div>
 </div>
 
-ATURAN PENTING:
-- Ikuti template referensi PERSIS untuk kop, nomor surat, penandatangan
-- Ubah: nama penerima, hal, tanggal, nomor (naikkan 1 dan sesuaikan bulan/tahun)
-- ISI KONTEN: Generate paragraf pembuka dan poin-poin isi yang RELEVAN, LENGKAP, dan MASUK AKAL sesuai Hal/Tujuan yang diberikan. Jangan pakai placeholder. Tulis seperti surat dinas sungguhan yang siap dikirim.
-- Nomor surat: ganti bulan romawi sesuai bulan dari tanggal yang diberikan, ganti tahun
-- Return HANYA HTML — tidak ada penjelasan, tidak ada markdown, tidak ada komentar`;
+<!-- Tembusan jika ada -->
+<div style="margin-top:16px;">
+  <div>Tembusan:</div>
+  <div>1. [dst]</div>
+</div>
+
+═══════════════════════════════════════════════
+JENIS 2: NOTA DINAS (ada header Yth/Dari/Tanggal/Nomor dalam tabel)
+═══════════════════════════════════════════════
+Struktur setelah kop:
+
+<div style="text-align:center;font-weight:bold;margin-bottom:12px;">NOTA DINAS</div>
+
+<table style="border-collapse:collapse;margin-bottom:14px;">
+  <tr><td style="width:75px;padding:0 0 1px;vertical-align:top;">Yth.</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;">[NAMA/JABATAN PENERIMA]</td></tr>
+  <tr><td style="padding:0 0 1px;">Dari</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[JABATAN PENGIRIM]</td></tr>
+  <tr><td style="padding:0 0 1px;">Tanggal</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[TANGGAL]</td></tr>
+  <tr><td style="padding:0 0 1px;">Nomor</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[NOMOR]</td></tr>
+  <tr><td style="padding:0 0 1px;">Sifat</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[SIFAT]</td></tr>
+  <tr><td style="padding:0 0 1px;">Lampiran</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[LAMPIRAN]</td></tr>
+  <tr><td style="padding:0 0 1px;vertical-align:top;">Hal</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;"><strong>[HAL]</strong></td></tr>
+</table>
+
+<p style="text-indent:1cm;text-align:justify;margin-bottom:10px;">[Isi nota dinas lengkap]</p>
+<p style="text-indent:1cm;text-align:justify;margin-bottom:16px;">[Penutup]</p>
+
+<!-- TTD (sama seperti surat dinas) -->
+
+═══════════════════════════════════════════════
+JENIS 3: SURAT TUGAS (ada MEMERINTAHKAN + tabel pegawai)
+═══════════════════════════════════════════════
+Struktur setelah kop:
+
+<div style="text-align:center;font-weight:bold;margin-bottom:6px;">SURAT TUGAS</div>
+<div style="text-align:center;margin-bottom:12px;">NOMOR [NOMOR SURAT]</div>
+
+<table style="border-collapse:collapse;width:100%;margin-bottom:12px;">
+  <tr><td style="width:75px;vertical-align:top;padding:0 0 1px;">Dasar</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;">[DASAR HUKUM/DISPOSISI]</td></tr>
+</table>
+
+<div style="text-align:center;font-weight:bold;margin:12px 0;text-decoration:underline;">MEMERINTAHKAN:</div>
+
+<table style="border-collapse:collapse;width:100%;margin-bottom:12px;">
+  <tr><td style="width:75px;vertical-align:top;padding:0 0 1px;">Kepada</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;">1. Nama &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: [NAMA]<br>Pangkat/Gol : [PANGKAT]<br>NIP &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: [NIP]<br>Jabatan &nbsp;&nbsp;&nbsp;&nbsp;: [JABATAN]</td></tr>
+</table>
+
+<table style="border-collapse:collapse;width:100%;margin-bottom:12px;">
+  <tr><td style="width:75px;vertical-align:top;padding:0 0 1px;">Untuk</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;">[TUGAS/TUJUAN PERJALANAN DINAS YANG LENGKAP DAN RELEVAN]</td></tr>
+</table>
+
+<div style="text-align:right;margin-bottom:10px;">Batam, [TANGGAL]</div>
+<!-- TTD (sama seperti surat dinas) -->
+
+═══════════════════════════════════════════════
+JENIS 4: TELAAH STAF (ada Kepada/Dari/Tanggal/Nomor di atas)
+═══════════════════════════════════════════════
+Struktur setelah kop:
+
+<div style="text-align:center;font-weight:bold;text-decoration:underline;margin-bottom:12px;">TELAAH STAF</div>
+
+<table style="border-collapse:collapse;margin-bottom:14px;">
+  <tr><td style="width:90px;padding:0 0 1px;vertical-align:top;">Kepada</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;">Yth. [PENERIMA]</td></tr>
+  <tr><td style="padding:0 0 1px;">Dari</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[PENGIRIM]</td></tr>
+  <tr><td style="padding:0 0 1px;">Tanggal</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[TANGGAL]</td></tr>
+  <tr><td style="padding:0 0 1px;">Nomor</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[NOMOR]</td></tr>
+  <tr><td style="padding:0 0 1px;">Sifat</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[SIFAT]</td></tr>
+  <tr><td style="padding:0 0 1px;">Lampiran</td><td style="padding:0 5px 1px;">:</td><td style="padding:0 0 1px;">[LAMPIRAN]</td></tr>
+  <tr><td style="padding:0 0 1px;vertical-align:top;">Hal</td><td style="padding:0 5px 1px;vertical-align:top;">:</td><td style="padding:0 0 1px;"><strong>[HAL]</strong></td></tr>
+</table>
+
+<p style="text-indent:1cm;text-align:justify;margin-bottom:10px;">[Pembuka merujuk pada konteks]</p>
+<ol style="margin:0 0 12px 0;padding-left:1.5cm;">
+  <li style="text-align:justify;margin-bottom:8px;">[Poin isi lengkap]</li>
+</ol>
+<p style="text-indent:1cm;text-align:justify;margin-bottom:16px;">Demikian yang dapat disampaikan, mohon arahan dan petunjuk Bapak selanjutnya.</p>
+<!-- TTD -->
+
+═══════════════════════════════════════════════
+ATURAN KONTEN
+═══════════════════════════════════════════════
+1. DETEKSI JENIS: Baca template → tentukan jenis (Surat Dinas/Nota Dinas/Surat Tugas/Telaah Staf)
+2. IKUTI STRUKTUR yang sesuai jenis tersebut
+3. SALIN dari template: kop surat, penandatangan (nama/pangkat/NIP), format nomor surat
+4. SESUAIKAN: nama/jabatan penerima, hal, tanggal, nomor (bulan romawi + tahun)
+5. ISI KONTEN: Buat konten yang RELEVAN, LENGKAP, sesuai tujuan surat dan ketentuan perundang-undangan (PUEBI, Permenpan RB 80/2012). JANGAN pakai placeholder.`;
 
   const userPrompt = `TEMPLATE REFERENSI:
 ===
@@ -121,8 +202,6 @@ Output HANYA HTML fragments. Tidak ada penjelasan.`;
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content?.trim();
     if (!content) throw new Error('Response kosong dari AI');
-
-    // Strip markdown code fences if AI wraps in ```html
     content = content.replace(/^```html\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
 
     return res.status(200).json({ nama, content });
