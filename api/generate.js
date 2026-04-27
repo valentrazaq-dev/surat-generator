@@ -22,13 +22,15 @@ export default async function handler(req, res) {
 TUGAS UTAMA: Generate satu surat baru yang format-nya IDENTIK dengan template referensi yang diberikan.
 
 ATURAN WAJIB - TIDAK BOLEH DILANGGAR:
-1. Salin PERSIS semua elemen format: kop surat, nomor surat, lampiran, perihal, pembuka, penutup, blok tanda tangan, tembusan
+1. Salin PERSIS semua elemen format: kop surat, nomor surat, lampiran, perihal, pembuka, penutup, blok tanda tangan, tembusan, DAN kolom paraf hirarkhi (Sekretaris, Kabid, Pengantar Kerja, dll)
 2. Ubah HANYA: nama/jabatan/instansi penerima sesuai nama yang diberikan, isi konten sesuai tujuan, dan tanggal
 3. Jika ada nomor surat dengan angka urut, pertahankan atau naikkan 1 angka
 4. Gunakan Bahasa Indonesia formal dan baku yang tepat
 5. Pertahankan semua spasi, enter, dan formatting kosong dari template
 6. PENTING: Return HANYA teks surat saja - tidak ada penjelasan, tidak ada markdown, tidak ada komentar apapun
 7. Mulai langsung dari baris pertama kop surat atau header surat`;
+8. Jika template memiliki tabel atau kolom paraf/persetujuan di bagian bawah (seperti "Paraf Hirarkhi", "Mengetahui", "Menyetujui"), WAJIB disertakan persis di posisi yang sama
+9. Jika ada struktur tabel dalam template, pertahankan strukturnya menggunakan spasi/tab yang konsisten
 
   const userPrompt = `TEMPLATE REFERENSI (ikuti format ini PERSIS):
 ===
