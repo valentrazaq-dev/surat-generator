@@ -42,18 +42,16 @@
     .field-group:last-child { margin-bottom: 0; }
     .name-counter { font-size: 11px; color: var(--accent); font-weight: 500; float: right; }
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--accent); color: white; width: 100%; padding: 12px; font-size: 15px; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:hover { background: var(--accent-hover); }
     .btn-danger { background: var(--red); color: white; width: 100%; padding: 12px; font-size: 15px; }
     .btn-success { background: var(--green); color: white; font-size: 12px; padding: 7px 12px; }
     .btn-success:hover { background: var(--green-hover); }
     .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 12px; padding: 7px 12px; }
     .btn-outline:hover { background: rgba(37,99,235,0.05); }
     .btn-zip { background: var(--navy); color: white; width: 100%; padding: 11px; font-size: 14px; margin-bottom: 16px; }
-    .btn-zip:hover { background: var(--navy-light); }
     .generate-section { margin-top: 20px; }
-    .progress-wrap { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px 18px; margin-top: 16px; box-shadow: var(--shadow); }
+    .progress-wrap { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px 18px; margin-top: 16px; }
     .progress-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
     .progress-sub { font-size: 12px; color: var(--gray-500); margin-bottom: 14px; }
     .progress-bar-track { background: var(--gray-200); border-radius: 100px; height: 8px; overflow: hidden; }
@@ -61,13 +59,13 @@
     .results-section { margin-top: 20px; }
     .results-title { font-size: 16px; font-weight: 700; color: var(--gray-900); display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
     .badge-success { background: #dcfce7; color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 100px; }
-    .surat-item { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
+    .surat-item { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
     .surat-item-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
     .surat-nama { font-size: 14px; font-weight: 600; color: var(--gray-900); }
     .surat-actions { display: flex; gap: 8px; }
-    .surat-preview { padding: 14px 16px; max-height: 220px; overflow-y: auto; }
-    .surat-preview pre { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.6; color: var(--gray-700); white-space: pre-wrap; word-break: break-word; }
-    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; display: flex; gap: 10px; }
+    .surat-preview { padding: 0; border: none; }
+    .surat-preview iframe { width: 100%; height: 340px; border: none; display: block; }
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; }
     .error-text { font-size: 13px; color: var(--red); line-height: 1.5; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-500); }
     .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
@@ -83,53 +81,26 @@
   <script type="text/babel">
     const { useState, useRef } = React;
 
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function buildWordDoc(content) {
-      var lines = content.split('\n');
-      var rows = lines.map(function(line) {
-        var escaped = escapeHtml(line);
-        var isCenter = line.trim().length > 0 &&
-          line.trim().length < 50 &&
-          line.trim() === line.trim().toUpperCase() &&
-          line.trim() === line.trim();
-        var align = isCenter ? 'center' : 'left';
-
-        // Detect indentation from leading tabs/spaces
-        var indentMatch = line.match(/^(\t+|\s{4,})/);
-        var indent = indentMatch ? indentMatch[0].replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;').replace(/ /g, '&nbsp;') : '';
-        var textContent = escaped.replace(/^\s+/, '');
-        var fullLine = indent + textContent;
-
-        return '<p style="margin:0;line-height:1.5;text-align:' + align + ';font-family:Times New Roman,serif;font-size:12pt;">' +
-          (fullLine || '&nbsp;') + '</p>';
-      });
-
+    function wrapWordDoc(htmlContent) {
       return '<!DOCTYPE html>' +
         '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
         'xmlns:w="urn:schemas-microsoft-com:office:word" ' +
         'xmlns="http://www.w3.org/TR/REC-html40">' +
         '<head><meta charset="utf-8">' +
         '<style>' +
-        'body{margin:2.54cm 3cm 2.54cm 4cm;}' +
-        'p{font-family:"Times New Roman",serif;font-size:12pt;margin:0;line-height:1.5;}' +
+        'body{font-family:"Times New Roman",serif;font-size:12pt;margin:2.54cm 3cm 2.54cm 4cm;}' +
+        'table{border-collapse:collapse;}' +
+        'p,div,td,li{font-family:"Times New Roman",serif;font-size:12pt;line-height:1.5;}' +
+        'ol{margin:0;padding-left:1.5cm;}' +
         '</style>' +
         '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>' +
-        '<w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
-        '</head><body>' +
-        rows.join('') +
-        '</body></html>';
+        '<w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
+        '</head><body>' + htmlContent + '</body></html>';
     }
 
-    function downloadDoc(nama, content) {
-      var html = buildWordDoc(content);
-      var blob = new Blob(['\ufeff' + html], { type: 'application/msword;charset=utf-8' });
+    function downloadDoc(nama, htmlContent) {
+      var full = wrapWordDoc(htmlContent);
+      var blob = new Blob(['\ufeff' + full], { type: 'application/msword;charset=utf-8' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -143,12 +114,27 @@
     async function downloadAllZip(results) {
       var zip = new JSZip();
       results.forEach(function(item) {
-        var html = buildWordDoc(item.content);
-        var content = '\ufeff' + html;
-        zip.file('Surat_' + item.nama.replace(/\s+/g, '_') + '.doc', content);
+        var full = wrapWordDoc(item.content);
+        zip.file('Surat_' + item.nama.replace(/\s+/g, '_') + '.doc', '\ufeff' + full);
       });
       var blob = await zip.generateAsync({ type: 'blob' });
       saveAs(blob, 'Surat_Generator_Output.zip');
+    }
+
+    function PreviewFrame(props) {
+      var previewHtml = '<html><head><meta charset="utf-8"><style>' +
+        'body{font-family:"Times New Roman",serif;font-size:12pt;margin:1cm 1.5cm;line-height:1.5;}' +
+        'table{border-collapse:collapse;width:100%;}' +
+        'td{font-family:"Times New Roman",serif;font-size:12pt;vertical-align:top;padding:1px 0;}' +
+        'ol{margin:0;padding-left:1.5cm;}' +
+        'li{margin-bottom:6px;}' +
+        'p,div{font-family:"Times New Roman",serif;font-size:12pt;}' +
+        '</style></head><body>' + props.html + '</body></html>';
+      return React.createElement('iframe', {
+        srcDoc: previewHtml,
+        style: { width: '100%', height: '340px', border: 'none', display: 'block' },
+        sandbox: 'allow-same-origin'
+      });
     }
 
     function App() {
@@ -174,13 +160,9 @@
         if (!purpose.trim()) return setGlobalError('Tujuan/Hal harus diisi');
         if (!date.trim()) return setGlobalError('Tanggal harus diisi');
 
-        setLoading(true);
-        setResults([]);
-        setProgress({ current: 0, total: nameCount });
+        setLoading(true); setResults([]); setProgress({ current: 0, total: nameCount });
         abortRef.current = false;
-
-        var newResults = [];
-        var newErrors = [];
+        var newResults = [], newErrors = [];
 
         for (var i = 0; i < nameList.length; i++) {
           if (abortRef.current) break;
@@ -229,10 +211,10 @@
                     <textarea className="mono" rows={18}
                       placeholder="PEMERINTAH KOTA BATAM&#10;DINAS TENAGA KERJA&#10;...&#10;&#10;Kepada : Yth. [NAMA]&#10;Dari   : Kepala Dinas&#10;..."
                       value={template} onChange={function(e){ setTemplate(e.target.value); }} />
-                    <p className="hint">Paste full surat: kop, nomor, isi, paraf hirarkhi, tanda tangan</p>
+                    <p className="hint">Paste full surat: kop, nomor, isi, tanda tangan</p>
                   </div>
                   <div className="tip-box">
-                    <p><strong>Tips:</strong> Semakin lengkap template yang lo paste, semakin akurat format output-nya.</p>
+                    <p><strong>Tips:</strong> Semakin lengkap template, semakin akurat format output-nya.</p>
                   </div>
                 </div>
               </div>
@@ -245,8 +227,7 @@
                   </div>
                   <div className="card-body">
                     <div className="field-group">
-                      <label>
-                        Daftar Nama <span>— satu nama per baris</span>
+                      <label>Daftar Nama <span>— satu nama per baris</span>
                         <span className="name-counter">{nameCount} nama</span>
                       </label>
                       <textarea rows={7} placeholder={"Ahmad Fauzi\nSiti Rahayu\nBudi Santoso"}
@@ -277,7 +258,7 @@
                     </button>
                   )}
                   {globalError && (
-                    <div className="error-box">
+                    <div className="error-box" style={{marginTop:12}}>
                       <span className="error-text">⚠️ {globalError}</span>
                     </div>
                   )}
@@ -324,7 +305,7 @@
                         <span className="surat-nama">👤 {item.nama}</span>
                         <div className="surat-actions">
                           <button className="btn btn-outline" onClick={function(){ navigator.clipboard.writeText(item.content); }}>
-                            📋 Copy
+                            📋 Copy HTML
                           </button>
                           <button className="btn btn-success" onClick={function(){ downloadDoc(item.nama, item.content); }}>
                             ⬇ Download .doc
@@ -332,7 +313,7 @@
                         </div>
                       </div>
                       <div className="surat-preview">
-                        <pre>{item.content}</pre>
+                        <PreviewFrame html={item.content} />
                       </div>
                     </div>
                   );
@@ -343,11 +324,10 @@
             {results.length === 0 && !loading && (
               <div className="empty-state">
                 <div className="icon">📋</div>
-                <p>Paste template → isi nama dan detail → klik Generate<br/>Output .doc siap dalam hitungan detik</p>
+                <p>Paste template → isi nama dan detail → klik Generate<br/>Preview langsung + Download .doc</p>
               </div>
             )}
           </div>
-
           <footer>Surat Generator AI — grahation-aesen-eai · Powered by Groq AI</footer>
         </div>
       );
