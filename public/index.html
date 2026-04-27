@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -438,27 +439,63 @@
   <script type="text/babel">
     const { useState, useRef } = React;
 
-    function downloadTxt(nama, content) {
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Surat_${nama.replace(/\s+/g, '_')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
+    async function downloadDocx(nama, content) {
+		const { Document, Paragraph, TextRun, Packer, AlignmentType } = window.docx;
+
+		const lines = content.split('\n');
+		const paragraphs = lines.map(line => {
+			const trimmed = line.trimEnd();
+			const isCenter = trimmed.toUpperCase() === trimmed && trimmed.length > 3 && trimmed.length < 40;
+			return new Paragraph({
+				alignment: isCenter ? AlignmentType.CENTER : AlignmentType.LEFT,
+				children: [new TextRun({
+					text: trimmed,
+					font: 'Times New Roman',
+					size: 24,
+				})],
+				spacing: { after: 0, before: 0, line: 276 },
+			});
+  });
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: {
+          margin: { top: 1134, right: 1134, bottom: 1134, left: 1701 }
+        }
+      },
+      children: paragraphs,
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Surat_${nama.replace(/\s+/g, '_')}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
     async function downloadAllZip(results) {
-      const zip = new JSZip();
-      results.forEach(({ nama, content }) => {
-        const filename = `Surat_${nama.replace(/\s+/g, '_')}.txt`;
-        zip.file(filename, content);
-      });
-      const blob = await zip.generateAsync({ type: 'blob' });
-      saveAs(blob, 'Surat_Generator_Output.zip');
-    }
+		const zip = new JSZip();
+		for (const { nama, content } of results) {
+			const { Document, Paragraph, TextRun, Packer, AlignmentType } = window.docx;
+			const lines = content.split('\n');
+			const paragraphs = lines.map(line => new Paragraph({
+				children: [new TextRun({ text: line.trimEnd(), font: 'Times New Roman', size: 24 })],
+				spacing: { after: 0, before: 0, line: 276 },
+			}));
+			const doc = new Document({ sections: [{ children: paragraphs }] });
+			const blob = await Packer.toBlob(doc);
+			const arrayBuffer = await blob.arrayBuffer();
+			zip.file(`Surat_${nama.replace(/\s+/g, '_')}.docx`, arrayBuffer);
+		}
+		const blob = await zip.generateAsync({ type: 'blob' });
+		saveAs(blob, 'Surat_Generator_Output.zip');
+	}
 
     function App() {
       const [template, setTemplate] = useState('');
@@ -692,9 +729,9 @@
                         </button>
                         <button
                           className="btn btn-success"
-                          onClick={() => downloadTxt(nama, content)}
+                          onClick={() => downloadDocx(nama, content)}
                         >
-                          ⬇ Download .txt
+                          ⬇ Download .docx
                         </button>
                       </div>
                     </div>
@@ -715,7 +752,7 @@
           </div>
 
           <footer>
-            Surat Generator AI — Disnaker Kota Batam · Powered by Claude AI
+            Surat Generator AI — graha-tion aesen ai · Powered by Claude AI
           </footer>
         </div>
       );
