@@ -12,18 +12,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Semua field harus diisi' });
   }
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: `Anda adalah ahli format surat dinas pemerintahan Indonesia yang sangat teliti dan presisi.
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY belum diset di environment variables' });
+  }
+
+  const systemInstruction = `Anda adalah ahli format surat dinas pemerintahan Indonesia yang sangat teliti dan presisi.
 
 TUGAS UTAMA: Generate satu surat baru yang format-nya IDENTIK dengan template referensi yang diberikan.
 
@@ -34,11 +28,9 @@ ATURAN WAJIB - TIDAK BOLEH DILANGGAR:
 4. Gunakan Bahasa Indonesia formal dan baku yang tepat
 5. Pertahankan semua spasi, enter, dan formatting kosong dari template
 6. PENTING: Return HANYA teks surat saja - tidak ada penjelasan, tidak ada markdown, tidak ada komentar apapun
-7. Mulai langsung dari baris pertama kop surat atau header surat`,
-        messages: [
-          {
-            role: 'user',
-            content: `TEMPLATE REFERENSI (ikuti format ini PERSIS):
+7. Mulai langsung dari baris pertama kop surat atau header surat`;
+
+  const userPrompt = `TEMPLATE REFERENSI (ikuti format ini PERSIS):
 ===
 ${template}
 ===
@@ -48,19 +40,39 @@ Nama/Penerima: ${nama}
 Hal/Tujuan: ${purpose}
 Tanggal: ${date}
 
-Return HANYA isi surat saja. Tidak ada penjelasan. Tidak ada komentar.`,
+Return HANYA isi surat saja. Tidak ada penjelasan. Tidak ada komentar.`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
           },
-        ],
-      }),
-    });
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: userPrompt }]
+            }
+          ],
+          generationConfig: {
+            maxOutputTokens: 4096,
+            temperature: 0.3,
+          }
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errData = await response.json();
-      throw new Error(errData.error?.message || `Claude API error: ${response.status}`);
+      throw new Error(errData.error?.message || `Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.content[0]?.text?.trim();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!content) throw new Error('Response kosong dari AI');
 
