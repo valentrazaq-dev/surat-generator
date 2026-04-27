@@ -78,7 +78,8 @@ STRUKTUR HTML YANG WAJIB DIIKUTI:
 
 ATURAN PENTING:
 - Ikuti template referensi PERSIS untuk kop, nomor surat, penandatangan
-- Ubah hanya: nama penerima, hal, tanggal, nomor (naikkan 1), isi konten
+- Ubah: nama penerima, hal, tanggal, nomor (naikkan 1 dan sesuaikan bulan/tahun)
+- ISI KONTEN: Generate paragraf pembuka dan poin-poin isi yang RELEVAN, LENGKAP, dan MASUK AKAL sesuai Hal/Tujuan yang diberikan. Jangan pakai placeholder. Tulis seperti surat dinas sungguhan yang siap dikirim.
 - Nomor surat: ganti bulan romawi sesuai bulan dari tanggal yang diberikan, ganti tahun
 - Return HANYA HTML — tidak ada penjelasan, tidak ada markdown, tidak ada komentar`;
 
