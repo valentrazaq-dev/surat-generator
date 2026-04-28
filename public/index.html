@@ -9,7 +9,6 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -52,7 +51,8 @@
     .btn-outline:hover { background: rgba(37,99,235,0.05); }
     .btn-zip { background: var(--navy); color: white; width: 100%; padding: 11px; font-size: 14px; margin-bottom: 16px; }
     .upload-zone { border: 2px dashed var(--gray-300); border-radius: 8px; padding: 20px 14px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--gray-50); margin-bottom: 10px; }
-    .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: #eff6ff; }
+    .upload-zone:hover { border-color: var(--accent); background: #eff6ff; }
+    .upload-zone.dragover { border-color: var(--accent); background: #eff6ff; }
     .upload-zone.has-file { border-color: var(--green); background: #f0fdf4; border-style: solid; }
     .upload-zone .uz-icon { font-size: 28px; margin-bottom: 6px; }
     .upload-zone .uz-text { font-size: 13px; color: var(--gray-500); }
@@ -86,6 +86,33 @@
 </head>
 <body>
   <div id="root"></div>
+
+  <script>
+    // Read docx using JSZip - extract plain text from Word XML
+    window.readDocxFile = function(file) {
+      return file.arrayBuffer().then(function(buf) {
+        return JSZip.loadAsync(buf);
+      }).then(function(zip) {
+        var xmlFile = zip.file('word/document.xml');
+        if (!xmlFile) throw new Error('File docx tidak valid');
+        return xmlFile.async('string');
+      }).then(function(xml) {
+        var text = xml
+          .replace(/<w:br[^>]*\/>/g, '\n')
+          .replace(/<\/w:p>/g, '\n')
+          .replace(/<w:tab[^>]*\/>/g, '\t')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+        return text;
+      });
+    };
+  </script>
+
   <script type="text/babel">
     const { useState, useRef } = React;
 
@@ -143,30 +170,6 @@
       });
     }
 
-    async function readDocx(file) {
-      // Use JSZip to extract text from docx without external library
-      var arrayBuffer = await file.arrayBuffer();
-      var zip = await JSZip.loadAsync(arrayBuffer);
-      var xmlFile = zip.file('word/document.xml');
-      if (!xmlFile) throw new Error('File docx tidak valid atau rusak');
-      var xml = await xmlFile.async('string');
-      // Extract plain text from Word XML
-      var text = xml
-        .replace(/<w:br[^>]*\/>/g, '\n')
-        .replace(/<\/w:p>/g, '\n')
-        .replace(/<w:tab[^>]*\/>/g, '\t')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#x27;/g, "'")
-        .replace(/
-{3,}/g, '\n\n')
-        .trim();
-      return text;
-    }
-
     function App() {
       const [template, setTemplate] = useState('');
       const [names, setNames] = useState('');
@@ -188,15 +191,15 @@
 
       async function processFile(file) {
         if (!file) return;
-        if (!file.name.endsWith('.docx')) {
+        if (!file.name.toLowerCase().endsWith('.docx')) {
           setGlobalError('Hanya file .docx yang didukung');
           return;
         }
         setUploading(true);
         setGlobalError('');
         try {
-          var text = await readDocx(file);
-          setTemplate(text.trim());
+          var text = await window.readDocxFile(file);
+          setTemplate(text);
           setUploadedFile(file.name);
         } catch (err) {
           setGlobalError('Gagal baca file: ' + err.message);
@@ -205,23 +208,18 @@
       }
 
       function handleFileInput(e) {
-        processFile(e.target.files[0]);
+        if (e.target.files && e.target.files[0]) {
+          processFile(e.target.files[0]);
+        }
         e.target.value = '';
-      }
-
-      function handleDragOver(e) {
-        e.preventDefault();
-        setDragover(true);
-      }
-
-      function handleDragLeave() {
-        setDragover(false);
       }
 
       function handleDrop(e) {
         e.preventDefault();
         setDragover(false);
-        processFile(e.dataTransfer.files[0]);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          processFile(e.dataTransfer.files[0]);
+        }
       }
 
       async function handleGenerate() {
@@ -259,10 +257,7 @@
       }
 
       var progressPct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
-
-      var uploadZoneClass = 'upload-zone';
-      if (dragover) uploadZoneClass += ' dragover';
-      else if (uploadedFile) uploadZoneClass += ' has-file';
+      var uzClass = 'upload-zone' + (dragover ? ' dragover' : uploadedFile ? ' has-file' : '');
 
       return (
         <div>
@@ -276,41 +271,28 @@
 
           <div className="container">
             <div className="layout">
-
-              {/* LEFT: Template */}
               <div className="card">
                 <div className="card-header">
                   <div className="step-badge">1</div>
                   <h2>Template Surat</h2>
                 </div>
                 <div className="card-body">
-
                   <div className="field-group">
                     <label>Upload file .docx template</label>
                     <div
-                      className={uploadZoneClass}
+                      className={uzClass}
                       onClick={function(){ fileInputRef.current.click(); }}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
+                      onDragOver={function(e){ e.preventDefault(); setDragover(true); }}
+                      onDragLeave={function(){ setDragover(false); }}
                       onDrop={handleDrop}
                     >
                       <input ref={fileInputRef} type="file" accept=".docx" style={{display:'none'}} onChange={handleFileInput} />
                       {uploading ? (
-                        <div>
-                          <div className="uz-icon">⏳</div>
-                          <div className="uz-text">Membaca file...</div>
-                        </div>
+                        <div><div className="uz-icon">⏳</div><div className="uz-text">Membaca file...</div></div>
                       ) : uploadedFile ? (
-                        <div>
-                          <div className="uz-icon">✅</div>
-                          <div className="uz-filename">{uploadedFile}</div>
-                          <div className="uz-text" style={{marginTop:'4px'}}>Klik untuk ganti</div>
-                        </div>
+                        <div><div className="uz-icon">✅</div><div className="uz-filename">{uploadedFile}</div><div className="uz-text" style={{marginTop:'4px'}}>Klik untuk ganti</div></div>
                       ) : (
-                        <div>
-                          <div className="uz-icon">📁</div>
-                          <div className="uz-text">Klik atau drag &amp; drop file .docx</div>
-                        </div>
+                        <div><div className="uz-icon">📁</div><div className="uz-text">Klik atau drag &amp; drop file .docx</div></div>
                       )}
                     </div>
                   </div>
@@ -321,7 +303,7 @@
                     <textarea className="mono" rows={11}
                       placeholder={"PEMERINTAH KOTA BATAM\nDINAS TENAGA KERJA\n...\nKepada : Yth. [NAMA]\nDari   : Kepala Dinas\n..."}
                       value={template}
-                      onChange={function(e){ setTemplate(e.target.value); if(e.target.value !== template) setUploadedFile(''); }}
+                      onChange={function(e){ setTemplate(e.target.value); setUploadedFile(''); }}
                     />
                     <p className="hint">Paste full surat: kop, nomor, isi, tanda tangan</p>
                   </div>
@@ -332,7 +314,6 @@
                 </div>
               </div>
 
-              {/* RIGHT: Detail */}
               <div>
                 <div className="card">
                   <div className="card-header">
@@ -341,8 +322,7 @@
                   </div>
                   <div className="card-body">
                     <div className="field-group">
-                      <label>
-                        Daftar Nama <span>— satu nama per baris</span>
+                      <label>Daftar Nama <span>— satu nama per baris</span>
                         <span className="name-counter">{nameCount} nama</span>
                       </label>
                       <textarea rows={7} placeholder={"Ahmad Fauzi\nSiti Rahayu\nBudi Santoso"}
@@ -391,7 +371,6 @@
               </div>
             </div>
 
-            {/* Results */}
             {(results.length > 0 || errors.length > 0) && (
               <div className="results-section">
                 <div className="divider"></div>
@@ -399,13 +378,11 @@
                   ✅ Hasil Generate
                   <span className="badge-success">{results.length} surat</span>
                 </h2>
-
                 {results.length > 1 && (
                   <button className="btn btn-zip" onClick={function(){ downloadAllZip(results); }}>
                     📦 Download Semua ({results.length} file) sebagai ZIP
                   </button>
                 )}
-
                 {errors.map(function(item) {
                   return (
                     <div className="error-box" style={{marginBottom:10}} key={item.nama}>
@@ -413,24 +390,17 @@
                     </div>
                   );
                 })}
-
                 {results.map(function(item) {
                   return (
                     <div className="surat-item" key={item.nama}>
                       <div className="surat-item-header">
                         <span className="surat-nama">👤 {item.nama}</span>
                         <div className="surat-actions">
-                          <button className="btn btn-outline" onClick={function(){ navigator.clipboard.writeText(item.content); }}>
-                            📋 Copy HTML
-                          </button>
-                          <button className="btn btn-success" onClick={function(){ downloadDoc(item.nama, item.content); }}>
-                            ⬇ Download .doc
-                          </button>
+                          <button className="btn btn-outline" onClick={function(){ navigator.clipboard.writeText(item.content); }}>📋 Copy HTML</button>
+                          <button className="btn btn-success" onClick={function(){ downloadDoc(item.nama, item.content); }}>⬇ Download .doc</button>
                         </div>
                       </div>
-                      <div className="surat-preview">
-                        <PreviewFrame html={item.content} />
-                      </div>
+                      <div className="surat-preview"><PreviewFrame html={item.content} /></div>
                     </div>
                   );
                 })}
@@ -444,7 +414,6 @@
               </div>
             )}
           </div>
-
           <footer>Surat Generator AI — grahation-aesen-eai · Powered by Groq AI</footer>
         </div>
       );
