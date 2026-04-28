@@ -51,19 +51,14 @@
     .btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); font-size: 12px; padding: 7px 12px; }
     .btn-outline:hover { background: rgba(37,99,235,0.05); }
     .btn-zip { background: var(--navy); color: white; width: 100%; padding: 11px; font-size: 14px; margin-bottom: 16px; }
-    .btn-upload { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--navy); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-    .btn-upload:hover { background: var(--navy-light); }
-    .btn-upload:disabled { opacity: 0.5; cursor: not-allowed; }
-    .upload-zone { border: 2px dashed var(--gray-300); border-radius: 6px; padding: 14px; text-align: center; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; background: var(--gray-50); }
-    .upload-zone:hover { border-color: var(--accent); background: #eff6ff; }
-    .upload-zone.has-file { border-color: var(--green); background: #f0fdf4; }
-    .upload-zone p { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
-    .upload-zone .icon { font-size: 24px; }
-    .upload-zone .filename { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 4px; }
-    .divider-text { text-align: center; font-size: 11px; color: var(--gray-500); margin: 8px 0; position: relative; }
-    .divider-text::before, .divider-text::after { content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--gray-200); }
-    .divider-text::before { left: 0; }
-    .divider-text::after { right: 0; }
+    .upload-zone { border: 2px dashed var(--gray-300); border-radius: 8px; padding: 20px 14px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--gray-50); margin-bottom: 10px; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: #eff6ff; }
+    .upload-zone.has-file { border-color: var(--green); background: #f0fdf4; border-style: solid; }
+    .upload-zone .uz-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-zone .uz-text { font-size: 13px; color: var(--gray-500); }
+    .upload-zone .uz-filename { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 4px; }
+    .divider-or { text-align: center; font-size: 11px; color: var(--gray-400); margin: 10px 0; display: flex; align-items: center; gap: 8px; }
+    .divider-or::before, .divider-or::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
     .generate-section { margin-top: 20px; }
     .progress-wrap { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px 18px; margin-top: 16px; }
     .progress-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
@@ -77,7 +72,6 @@
     .surat-item-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
     .surat-nama { font-size: 14px; font-weight: 600; color: var(--gray-900); }
     .surat-actions { display: flex; gap: 8px; }
-    .surat-preview { padding: 0; }
     .surat-preview iframe { width: 100%; height: 340px; border: none; display: block; }
     .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; }
     .error-text { font-size: 13px; color: var(--red); line-height: 1.5; }
@@ -95,11 +89,9 @@
   <script type="text/babel">
     const { useState, useRef } = React;
 
-    function wrapWordDoc(htmlContent) {
+    function wrapWordDoc(html) {
       return '<!DOCTYPE html>' +
-        '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
-        'xmlns:w="urn:schemas-microsoft-com:office:word" ' +
-        'xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
         '<head><meta charset="utf-8"><style>' +
         '@page{margin:3cm 3cm 2.5cm 4cm;}' +
         'body{font-family:"Times New Roman",serif;font-size:12pt;margin:3cm 3cm 2.5cm 4cm;line-height:1.5;}' +
@@ -109,14 +101,12 @@
         'strong{font-weight:bold;}u{text-decoration:underline;}' +
         'hr{border:none;border-top:1px solid black;margin:4px 0;}' +
         '</style>' +
-        '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>' +
-        '<w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
-        '</head><body>' + htmlContent + '</body></html>';
+        '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
+        '</head><body>' + html + '</body></html>';
     }
 
-    function downloadDoc(nama, htmlContent) {
-      var full = wrapWordDoc(htmlContent);
-      var blob = new Blob(['\ufeff' + full], { type: 'application/msword;charset=utf-8' });
+    function downloadDoc(nama, html) {
+      var blob = new Blob(['\ufeff' + wrapWordDoc(html)], { type: 'application/msword;charset=utf-8' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -130,36 +120,35 @@
     async function downloadAllZip(results) {
       var zip = new JSZip();
       results.forEach(function(item) {
-        var full = wrapWordDoc(item.content);
-        zip.file('Surat_' + item.nama.replace(/\s+/g, '_') + '.doc', '\ufeff' + full);
+        zip.file('Surat_' + item.nama.replace(/\s+/g, '_') + '.doc', '\ufeff' + wrapWordDoc(item.content));
       });
       var blob = await zip.generateAsync({ type: 'blob' });
       saveAs(blob, 'Surat_Generator_Output.zip');
     }
 
     function PreviewFrame(props) {
-      var previewHtml = '<html><head><meta charset="utf-8"><style>' +
+      var html = '<html><head><meta charset="utf-8"><style>' +
         'body{font-family:"Times New Roman",serif;font-size:12pt;margin:1cm 1.5cm;line-height:1.5;}' +
         'table{border-collapse:collapse;width:100%;}' +
         'td{font-family:"Times New Roman",serif;font-size:12pt;vertical-align:top;padding:1px 0;}' +
-        'ol,ul{margin:0;padding-left:1.5cm;}li{margin-bottom:6px;}' +
+        'ol,ul{margin:0;padding-left:1.5cm;}li{margin-bottom:6px;text-align:justify;}' +
         'p,div{font-family:"Times New Roman",serif;font-size:12pt;margin:0;}' +
         'strong{font-weight:bold;}u{text-decoration:underline;}' +
         'hr{border:none;border-top:1px solid black;margin:4px 0;}' +
         '</style></head><body>' + props.html + '</body></html>';
       return React.createElement('iframe', {
-        srcDoc: previewHtml,
+        srcDoc: html,
         style: { width: '100%', height: '340px', border: 'none', display: 'block' },
         sandbox: 'allow-same-origin'
       });
     }
 
-    async function extractDocx(file) {
+    async function readDocx(file) {
       return new Promise(function(resolve, reject) {
         var reader = new FileReader();
         reader.onload = function(e) {
           mammoth.extractRawValue({ arrayBuffer: e.target.result })
-            .then(function(result) { resolve(result.value); })
+            .then(function(r) { resolve(r.value); })
             .catch(reject);
         };
         reader.onerror = reject;
@@ -175,6 +164,7 @@
       const [loading, setLoading] = useState(false);
       const [uploading, setUploading] = useState(false);
       const [uploadedFile, setUploadedFile] = useState('');
+      const [dragover, setDragover] = useState(false);
       const [progress, setProgress] = useState({ current: 0, total: 0 });
       const [results, setResults] = useState([]);
       const [errors, setErrors] = useState([]);
@@ -185,8 +175,7 @@
       const nameList = names.split('\n').map(function(n){ return n.trim(); }).filter(Boolean);
       const nameCount = nameList.length;
 
-      async function handleFileUpload(e) {
-        var file = e.target.files[0];
+      async function processFile(file) {
         if (!file) return;
         if (!file.name.endsWith('.docx')) {
           setGlobalError('Hanya file .docx yang didukung');
@@ -195,27 +184,33 @@
         setUploading(true);
         setGlobalError('');
         try {
-          var text = await extractDocx(file);
+          var text = await readDocx(file);
           setTemplate(text.trim());
           setUploadedFile(file.name);
         } catch (err) {
           setGlobalError('Gagal baca file: ' + err.message);
         }
         setUploading(false);
+      }
+
+      function handleFileInput(e) {
+        processFile(e.target.files[0]);
         e.target.value = '';
       }
 
-      function handleDropZoneClick() {
-        fileInputRef.current.click();
+      function handleDragOver(e) {
+        e.preventDefault();
+        setDragover(true);
+      }
+
+      function handleDragLeave() {
+        setDragover(false);
       }
 
       function handleDrop(e) {
         e.preventDefault();
-        var file = e.dataTransfer.files[0];
-        if (file) {
-          var fakeEvent = { target: { files: [file], value: '' } };
-          handleFileUpload(fakeEvent);
-        }
+        setDragover(false);
+        processFile(e.dataTransfer.files[0]);
       }
 
       async function handleGenerate() {
@@ -254,6 +249,10 @@
 
       var progressPct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
+      var uploadZoneClass = 'upload-zone';
+      if (dragover) uploadZoneClass += ' dragover';
+      else if (uploadedFile) uploadZoneClass += ' has-file';
+
       return (
         <div>
           <header>
@@ -266,6 +265,8 @@
 
           <div className="container">
             <div className="layout">
+
+              {/* LEFT: Template */}
               <div className="card">
                 <div className="card-header">
                   <div className="step-badge">1</div>
@@ -273,51 +274,43 @@
                 </div>
                 <div className="card-body">
 
-                  {/* Upload zone */}
                   <div className="field-group">
                     <label>Upload file .docx template</label>
                     <div
-                      className={'upload-zone' + (uploadedFile ? ' has-file' : '')}
-                      onClick={handleDropZoneClick}
+                      className={uploadZoneClass}
+                      onClick={function(){ fileInputRef.current.click(); }}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      onDragOver={function(e){ e.preventDefault(); }}
                     >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".docx"
-                        style={{display:'none'}}
-                        onChange={handleFileUpload}
-                      />
+                      <input ref={fileInputRef} type="file" accept=".docx" style={{display:'none'}} onChange={handleFileInput} />
                       {uploading ? (
                         <div>
-                          <div className="icon">⏳</div>
-                          <p>Membaca file...</p>
+                          <div className="uz-icon">⏳</div>
+                          <div className="uz-text">Membaca file...</div>
                         </div>
                       ) : uploadedFile ? (
                         <div>
-                          <div className="icon">✅</div>
-                          <div className="filename">{uploadedFile}</div>
-                          <p>Klik untuk ganti file</p>
+                          <div className="uz-icon">✅</div>
+                          <div className="uz-filename">{uploadedFile}</div>
+                          <div className="uz-text" style={{marginTop:'4px'}}>Klik untuk ganti</div>
                         </div>
                       ) : (
                         <div>
-                          <div className="icon">📁</div>
-                          <p>Klik atau drag & drop file .docx di sini</p>
+                          <div className="uz-icon">📁</div>
+                          <div className="uz-text">Klik atau drag &amp; drop file .docx</div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Divider */}
-                  <div className="divider-text">atau paste manual</div>
+                  <div className="divider-or">atau paste manual</div>
 
-                  {/* Textarea */}
                   <div className="field-group">
-                    <textarea className="mono" rows={12}
+                    <textarea className="mono" rows={11}
                       placeholder={"PEMERINTAH KOTA BATAM\nDINAS TENAGA KERJA\n...\nKepada : Yth. [NAMA]\nDari   : Kepala Dinas\n..."}
                       value={template}
-                      onChange={function(e){ setTemplate(e.target.value); setUploadedFile(''); }}
+                      onChange={function(e){ setTemplate(e.target.value); if(e.target.value !== template) setUploadedFile(''); }}
                     />
                     <p className="hint">Paste full surat: kop, nomor, isi, tanda tangan</p>
                   </div>
@@ -328,6 +321,7 @@
                 </div>
               </div>
 
+              {/* RIGHT: Detail */}
               <div>
                 <div className="card">
                   <div className="card-header">
@@ -336,7 +330,8 @@
                   </div>
                   <div className="card-body">
                     <div className="field-group">
-                      <label>Daftar Nama <span>— satu nama per baris</span>
+                      <label>
+                        Daftar Nama <span>— satu nama per baris</span>
                         <span className="name-counter">{nameCount} nama</span>
                       </label>
                       <textarea rows={7} placeholder={"Ahmad Fauzi\nSiti Rahayu\nBudi Santoso"}
@@ -350,7 +345,7 @@
                     </div>
                     <div className="field-group">
                       <label>Tanggal Surat</label>
-                      <input type="text" placeholder="Cth: 27 April 2026"
+                      <input type="text" placeholder="Cth: 28 April 2026"
                         value={date} onChange={function(e){ setDate(e.target.value); }} />
                     </div>
                   </div>
@@ -385,6 +380,7 @@
               </div>
             </div>
 
+            {/* Results */}
             {(results.length > 0 || errors.length > 0) && (
               <div className="results-section">
                 <div className="divider"></div>
@@ -437,6 +433,7 @@
               </div>
             )}
           </div>
+
           <footer>Surat Generator AI — grahation-aesen-eai · Powered by Groq AI</footer>
         </div>
       );
